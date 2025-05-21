@@ -17,7 +17,7 @@ namespace SalesHealth.Services.Implementation
         {
             try
             {
-                HttpClient client = _httpClientFactory.CreateClient("MangoAPI");
+                HttpClient client = _httpClientFactory.CreateClient("SaleHealthAPI");
                 HttpRequestMessage message = new HttpRequestMessage();
 
                 if (request.ContentType == SD.ContentType.MultipartFormData)
