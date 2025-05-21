@@ -38,8 +38,8 @@ namespace SalesHealth.Controllers
 
             try
             {
-                var sale = _mapper.Map<Sale>(requestDto);
-                var createdSale = await _salesHealthRespository.CreateSale(sale);
+                var sale = _mapper.Map<SaleDto>(requestDto);
+                var createdSale = await _salesHealthRespository.CreateSaleAsync(sale);
 
                 response.Result = createdSale != null ? _mapper.Map<SaleDto>(createdSale) : null;
                 response.IsSuccess = createdSale != null;
@@ -64,8 +64,8 @@ namespace SalesHealth.Controllers
             var response = new ResponseDto();
             try
             {
-                var sale = _mapper.Map<Sale>(request);
-                var updatedSale = await _salesHealthRespository.UpdateSale(sale);
+                var sale = _mapper.Map<SaleDto>(request);
+                var updatedSale = await _salesHealthRespository.EditSaleAsync(sale);
 
                 response.Result = updatedSale != null ? _mapper.Map<SaleDto>(updatedSale) : null;
                 response.IsSuccess = updatedSale != null;
@@ -90,9 +90,9 @@ namespace SalesHealth.Controllers
             var response = new ResponseDto();
             try
             {
-                var result = await _salesHealthRespository.DeleteSale(id);
-                response.Result = result > 0 ? "Success! Sale deleted successfully..." : null;
-                response.IsSuccess = result > 0;
+                var result = await _salesHealthRespository.DeleteSaleAsync(id);
+                response.Result = result?.IsSuccess == true ? "Success! Sale deleted successfully..." : null;
+                response.IsSuccess = result.IsSuccess;
             }
             catch (Exception ex)
             {
@@ -113,7 +113,7 @@ namespace SalesHealth.Controllers
             var response = new ResponseDto();
             try
             {
-                var salesList = await _salesHealthRespository.GetAllSalesAsync();
+                var salesList = await _salesHealthRespository.GetAllSaleAsync();
                 response.Result = salesList != null ? _mapper.Map<IEnumerable<SaleDto>>(salesList) : null;
                 response.IsSuccess = salesList != null;
             }
@@ -135,10 +135,9 @@ namespace SalesHealth.Controllers
         public async Task<IActionResult> GetSale([FromRoute] int id)
         {
             var response = new ResponseDto();
-            Sale sale = null;
             try
             {
-                sale = await _salesHealthRespository.GetSaleAsync(id);
+                var sale = await _salesHealthRespository.GetSaleByIdAsync(id);
                 response.Result = sale != null ? _mapper.Map<SaleDto>(sale) : null;
                 response.IsSuccess = sale != null;
             }
@@ -147,8 +146,7 @@ namespace SalesHealth.Controllers
                 response.IsSuccess = false;
                 response.Message = ex.Message;
             }
-
-            return sale != null ? Ok(response) : NotFound(response);
+            return response?.IsSuccess == true ? Ok(response) : NotFound(response);
         }
     }
 }

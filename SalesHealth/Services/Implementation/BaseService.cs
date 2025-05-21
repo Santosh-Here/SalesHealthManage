@@ -1,12 +1,13 @@
 ﻿using Newtonsoft.Json;
 using SalesHealth.Cores;
 using SalesHealth.Models.Dtos;
+using SalesHealth.Services.IService;
 using System.Net;
 using System.Text;
 
 namespace SalesHealth.Services.Implementation
 {
-    public class BaseService
+    public class BaseService : IBaseService
     {
         private readonly IHttpClientFactory _httpClientFactory;
         public BaseService(IHttpClientFactory httpClientFactory)

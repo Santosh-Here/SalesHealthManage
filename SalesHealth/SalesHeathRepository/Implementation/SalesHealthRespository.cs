@@ -1,7 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using SalesHealth.Cores;
 using SalesHealth.DbContexts;
 using SalesHealth.Models;
+using SalesHealth.Models.Dtos;
 using SalesHealth.SalesHeathRepository.Interface;
+using SalesHealth.Services.IService;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -10,69 +13,60 @@ namespace SalesHealth.SalesHeathRepository.Implementation
 {
     public class SalesHealthRespository : ISalesHealthRespository
     {
-        private readonly SalesHealthDbContext _dbContext;
-
-        public SalesHealthRespository(SalesHealthDbContext dbContext)
+        private readonly IBaseService _baseService;
+        public SalesHealthRespository(IBaseService baseService)
         {
-            _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+            _baseService = baseService;
         }
 
-        public async Task<Sale> CreateSale(Sale sale)
+        public async Task<ResponseDto?> CreateSaleAsync(SaleDto saleDto)
         {
-            if (sale == null)
+            return await _baseService.SendAsync(new RequestDto()
             {
-                throw new ArgumentNullException(nameof(sale));
-            }
-
-            await _dbContext.Sales.AddAsync(sale);
-            await _dbContext.SaveChangesAsync();
-            return sale;
+                ApiType = SD.ApiType.POST,
+                Data = saleDto,
+                Url = SD.SalesApiBase + "/api/sale",
+                ContentType = SD.ContentType.Json
+            });
         }
 
-        public async Task<int> DeleteSale(int id)
+        public async Task<ResponseDto?> DeleteSaleAsync(int id)
         {
-            var saleFromDb = await _dbContext.Sales.FindAsync(id);
-            if (saleFromDb == null)
+            return await _baseService.SendAsync(new RequestDto()
             {
-                throw new KeyNotFoundException($"Sale with ID {id} not found.");
-            }
-
-            _dbContext.Sales.Remove(saleFromDb);
-            return await _dbContext.SaveChangesAsync();
+                ApiType = SD.ApiType.DELETE,
+                Url = SD.SalesApiBase + "/api/sale/" + id
+            });
         }
 
-        public async Task<IEnumerable<Sale>> GetAllSalesAsync()
+
+        public async Task<ResponseDto?> GetAllSaleAsync()
         {
-            return await _dbContext.Sales.ToListAsync();
+            return await _baseService.SendAsync(new RequestDto()
+            {
+                ApiType = SD.ApiType.GET,
+                Url = SD.SalesApiBase + "/api/sale"
+            });
         }
 
-        public async Task<Sale> GetSaleAsync(int id)
+        public async Task<ResponseDto?> GetSaleByIdAsync(int id)
         {
-            var sale = await _dbContext.Sales.FindAsync(id);
-            if (sale == null)
+            return await _baseService.SendAsync(new RequestDto()
             {
-                throw new KeyNotFoundException($"Sale with ID {id} not found.");
-            }
-
-            return sale;
+                ApiType = SD.ApiType.GET,
+                Url = SD.SalesApiBase + "/api/sale/" + id
+            });
         }
 
-        public async Task<Sale> UpdateSale(Sale sale)
+        public async Task<ResponseDto?> EditSaleAsync(SaleDto saleDto)
         {
-            if (sale == null)
+            return await _baseService.SendAsync(new RequestDto()
             {
-                throw new ArgumentNullException(nameof(sale));
-            }
-
-            var existingSale = await _dbContext.Sales.FindAsync(sale.Id);
-            if (existingSale == null)
-            {
-                throw new KeyNotFoundException($"Sale with ID {sale.Id} not found.");
-            }
-
-            _dbContext.Entry(existingSale).CurrentValues.SetValues(sale);
-            await _dbContext.SaveChangesAsync();
-            return existingSale;
+                ApiType = SD.ApiType.PUT,
+                Data = saleDto,
+                Url = SD.SalesApiBase + "/api/sale",
+                ContentType = SD.ContentType.Json
+            });
         }
     }
 }

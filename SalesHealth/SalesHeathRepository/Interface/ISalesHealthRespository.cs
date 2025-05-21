@@ -1,13 +1,14 @@
 ﻿using SalesHealth.Models;
+using SalesHealth.Models.Dtos;
 
 namespace SalesHealth.SalesHeathRepository.Interface
 {
     public interface ISalesHealthRespository
     {
-        Task<IEnumerable<Sale>> GetAllSalesAsync();
-        Task<Sale> GetSaleAsync(int id);
-        Task<Sale> CreateSale(Sale sale);
-        Task<Sale> UpdateSale(Sale sale);
-        Task<int> DeleteSale(int id);
+        Task<ResponseDto?> GetAllSaleAsync();
+        Task<ResponseDto?> GetSaleByIdAsync(int id);
+        Task<ResponseDto?> CreateSaleAsync(SaleDto saleDto);
+        Task<ResponseDto?> EditSaleAsync(SaleDto saleDto);
+        Task<ResponseDto?> DeleteSaleAsync(int id);
     }
 }

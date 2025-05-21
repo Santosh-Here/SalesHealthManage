@@ -12,6 +12,7 @@ namespace SalesHealth.Cores
             {
                 config.CreateMap<Sale, SaleDto>().ReverseMap();
                 config.CreateMap<Sale, CreateSaleRequestDto>().ReverseMap();
+                config.CreateMap<SaleDto, CreateSaleRequestDto>().ReverseMap();
             });
             return mappingConfig;
         }
