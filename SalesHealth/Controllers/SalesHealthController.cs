@@ -31,10 +31,8 @@ namespace SalesHealth.Controllers
             try
             {
                 var sale = _mapper.Map<SaleDto>(requestDto);
-
                 await _salesService.AddAsync(sale);
-
-                return Created();
+                return StatusCode(201);
             }
             catch (HttpRequestException requestException)
             {
@@ -156,7 +154,7 @@ namespace SalesHealth.Controllers
             }
             catch (HttpRequestException requestException)
             {
-                if(requestException.StatusCode == System.Net.HttpStatusCode.NotFound)
+                if (requestException.StatusCode == System.Net.HttpStatusCode.NotFound)
                 {
                     return NotFound();
                 }
