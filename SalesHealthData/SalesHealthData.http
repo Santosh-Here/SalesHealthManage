@@ -1,0 +1,6 @@
+@SalesHealthData_HostAddress = http://localhost:5177
+
+GET {{SalesHealthData_HostAddress}}/SalesHealthData
+Accept: application/json
+
+###

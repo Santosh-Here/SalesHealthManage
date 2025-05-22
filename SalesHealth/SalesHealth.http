@@ -1,6 +1,6 @@
 @SalesHealth_HostAddress = http://localhost:5214
 
-GET {{SalesHealth_HostAddress}}/weatherforecast/
+GET {{SalesHealth_HostAddress}}/api/saleshealth/v1/sales
 Accept: application/json
 
 ###

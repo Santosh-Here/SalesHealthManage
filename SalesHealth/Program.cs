@@ -1,34 +1,30 @@
 using AutoMapper;
-using Microsoft.EntityFrameworkCore;
+using SalesHealth.Adapters;
+using SalesHealth.Adapters.Interfaces;
 using SalesHealth.Cores;
-using SalesHealth.DbContexts;
-using SalesHealth.SalesHeathRepository.Implementation;
-using SalesHealth.SalesHeathRepository.Interface;
-using SalesHealth.Services.Implementation;
-using SalesHealth.Services.IService;
+using SalesHealth.Models.Dtos;
+using SalesHealth.Repositories;
+using SalesHealth.Repositories.Interfaces;
+using SalesHealth.Services;
+using SalesHealth.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
 // Add services to the container.
-builder.Services.AddDbContext<SalesHealthDbContext>(options =>
-{
-    options.UseSqlServer(builder.Configuration.GetConnectionString("dbSalesHealthConnection"));
-});
+var configuration = new ConfigurationBuilder()
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 
-
+IConfiguration _configuration = configuration.Build();
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient();
-builder.Services.AddHttpClient<ISalesHealthRespository, SalesHealthRespository>();
 
-
-SD.SalesApiBase = builder.Configuration["ServiceUrls:SaleAPI"];
-
-builder.Services.AddScoped<IBaseService, BaseService>();
-
-builder.Services.AddScoped<ISalesHealthRespository, SalesHealthRespository>();
+builder.Services.AddScoped<ISalesRepository<SaleDto>, SalesRepository<SaleDto>>();
+builder.Services.AddScoped<ISalesApiAdapter<SaleDto>, SalesApiAdapter<SaleDto>>();
+builder.Services.AddScoped<ISalesService, SalesService>();
 
 IMapper mapper = MappingConfig.RegisterMaps().CreateMapper();
 builder.Services.AddSingleton(mapper);

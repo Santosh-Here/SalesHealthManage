@@ -1,26 +1,19 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
-using SalesHealth.Models;
 using SalesHealth.Models.Dtos;
-using SalesHealth.SalesHeathRepository.Interface;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+using SalesHealth.Services.Interfaces;
 
 namespace SalesHealth.Controllers
 {
-    [Route("/api/saleshealth/v1/sales")]
     [ApiController]
-    public class SalesHealthController : ControllerBase
+    [Route("[controller]")]
+    public class SalesHealthController(IMapper mapper,
+        ISalesService salesService,
+        ILogger<SalesHealthController> logger) : ControllerBase
     {
-        private readonly ISalesHealthRespository _salesHealthRespository;
-        private readonly IMapper _mapper;
-
-        public SalesHealthController(ISalesHealthRespository salesHealthRespository, IMapper mapper)
-        {
-            _salesHealthRespository = salesHealthRespository;
-            _mapper = mapper;
-        }
+        private readonly IMapper _mapper = mapper;
+        private readonly ISalesService _salesService = salesService;
+        private readonly ILogger<SalesHealthController> _logger = logger;
 
         /// <summary>
         /// Endpoint to create a sale
@@ -30,27 +23,29 @@ namespace SalesHealth.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateSale([FromBody] CreateSaleRequestDto requestDto)
         {
-            var response = new ResponseDto();
             if (string.IsNullOrEmpty(requestDto.Name) || string.IsNullOrEmpty(requestDto.Description))
             {
-                return BadRequest("Name and Description cannot be empty.");
+                return BadRequest("Name or Description cannot be empty.");
             }
 
             try
             {
                 var sale = _mapper.Map<SaleDto>(requestDto);
-                var createdSale = await _salesHealthRespository.CreateSaleAsync(sale);
 
-                response.Result = createdSale != null ? _mapper.Map<SaleDto>(createdSale) : null;
-                response.IsSuccess = createdSale != null;
+                await _salesService.AddAsync(sale);
+
+                return Created();
+            }
+            catch (HttpRequestException requestException)
+            {
+                _logger.LogError($"Non success response code received from the underlying service. Response: {requestException.StatusCode} and message: {requestException.Message}.");
+
+                return StatusCode(500, $"Non success response code received from the underlying service. Response: {requestException.StatusCode}");
             }
             catch (Exception ex)
             {
-                response.IsSuccess = false;
-                response.Message = ex.Message;
+                return StatusCode(500, $"Error while creating sale. Reason: {ex.Message}");
             }
-
-            return Ok(response);
         }
 
         /// <summary>
@@ -59,24 +54,34 @@ namespace SalesHealth.Controllers
         /// <param name="request"></param>
         /// <returns></returns>
         [HttpPut]
-        public async Task<IActionResult> UpdateSale([FromBody] SaleDto request)
+        public async Task<IActionResult> UpdateSale([FromBody] SaleDto requestDto)
         {
-            var response = new ResponseDto();
             try
             {
-                var sale = _mapper.Map<SaleDto>(request);
-                var updatedSale = await _salesHealthRespository.EditSaleAsync(sale);
+                if (string.IsNullOrEmpty(requestDto.Name) || string.IsNullOrEmpty(requestDto.Description))
+                {
+                    return BadRequest("Name or Description cannot be empty.");
+                }
 
-                response.Result = updatedSale != null ? _mapper.Map<SaleDto>(updatedSale) : null;
-                response.IsSuccess = updatedSale != null;
+                await _salesService.UpdateAsync(requestDto);
+
+                return Accepted();
+            }
+            catch (HttpRequestException requestException)
+            {
+                if (requestException.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    return NotFound();
+                }
+
+                _logger.LogError($"Non success response code received from the underlying service. Response: {requestException.StatusCode} and message: {requestException.Message}.");
+
+                return StatusCode(500, $"Non success response code received from the underlying service. Response: {requestException.StatusCode}");
             }
             catch (Exception ex)
             {
-                response.IsSuccess = false;
-                response.Message = ex.Message;
+                return StatusCode(500, $"Error while updating sale. Reason: {ex.Message}");
             }
-
-            return Ok(response);
         }
 
         /// <summary>
@@ -87,20 +92,27 @@ namespace SalesHealth.Controllers
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteSale(int id)
         {
-            var response = new ResponseDto();
             try
             {
-                var result = await _salesHealthRespository.DeleteSaleAsync(id);
-                response.Result = result?.IsSuccess == true ? "Success! Sale deleted successfully..." : null;
-                response.IsSuccess = result.IsSuccess;
+                await _salesService.DeleteAsync(id);
+
+                return Accepted();
+            }
+            catch (HttpRequestException requestException)
+            {
+                if (requestException.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    return NotFound();
+                }
+
+                _logger.LogError($"Non success response code received from the underlying service. Response: {requestException.StatusCode} and message: {requestException.Message}.");
+
+                return StatusCode(500, $"Non success response code received from the underlying service. Response: {requestException.StatusCode}");
             }
             catch (Exception ex)
             {
-                response.IsSuccess = false;
-                response.Message = ex.Message;
+                return StatusCode(500, $"Error while deleting sale. Reason: {ex.Message}");
             }
-
-            return Ok(response);
         }
 
         /// <summary>
@@ -110,20 +122,22 @@ namespace SalesHealth.Controllers
         [HttpGet]
         public async Task<IActionResult> GetSales()
         {
-            var response = new ResponseDto();
             try
             {
-                var salesList = await _salesHealthRespository.GetAllSaleAsync();
-                response.Result = salesList != null ? _mapper.Map<IEnumerable<SaleDto>>(salesList) : null;
-                response.IsSuccess = salesList != null;
+                var saleDataList = await _salesService.GetAllAsync();
+
+                return Ok(saleDataList);
+            }
+            catch (HttpRequestException requestException)
+            {
+                _logger.LogError($"Non success response code received from the underlying service. Response: {requestException.StatusCode} and message: {requestException.Message}.");
+
+                return StatusCode(500, $"non success response code received from the underlying service. Response: {requestException.StatusCode}");
             }
             catch (Exception ex)
             {
-                response.IsSuccess = false;
-                response.Message = ex.Message;
+                return StatusCode(500, $"Error while fetching sales data. Reason: {ex.Message}");
             }
-
-            return Ok(response);
         }
 
         /// <summary>
@@ -132,21 +146,29 @@ namespace SalesHealth.Controllers
         /// <param name="id"></param>
         /// <returns></returns>
         [HttpGet("{id:int}")]
-        public async Task<IActionResult> GetSale([FromRoute] int id)
+        public async Task<IActionResult> GetSale(int id)
         {
-            var response = new ResponseDto();
             try
             {
-                var sale = await _salesHealthRespository.GetSaleByIdAsync(id);
-                response.Result = sale != null ? _mapper.Map<SaleDto>(sale) : null;
-                response.IsSuccess = sale != null;
+                var saleData = await _salesService.GetByIdAsync(id);
+
+                return Ok(saleData);
+            }
+            catch (HttpRequestException requestException)
+            {
+                if(requestException.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    return NotFound();
+                }
+
+                _logger.LogError($"Non success response code received from the underlying service. Response: {requestException.StatusCode} and message: {requestException.Message}.");
+
+                return StatusCode(500, $"Non success response code received from the underlying service. Response: {requestException.StatusCode}");
             }
             catch (Exception ex)
             {
-                response.IsSuccess = false;
-                response.Message = ex.Message;
+                return StatusCode(500, $"Error while fetching sales data. Reason: {ex.Message}");
             }
-            return response?.IsSuccess == true ? Ok(response) : NotFound(response);
         }
     }
 }
